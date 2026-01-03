@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Python Web Playground</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐍</text></svg>">
+</head>
+<body class="bg-[#1e1e1e] text-gray-200 overflow-hidden h-screen flex flex-col">
+
+    <!-- Header / Navbar -->
+    <header class="h-14 border-b border-gray-700 flex items-center justify-between px-4 bg-[#252526] shrink-0">
+        <div class="flex items-center gap-2">
+            <span class="text-xl">🐍</span>
+            <h1 class="font-bold text-sm md:text-base hidden sm:block">Python Playground</h1>
+        </div>
+        
+        <div class="flex items-center gap-2">
+            <button id="runBtn" class="bg-green-600 hover:bg-green-500 text-white px-4 py-1.5 rounded flex items-center gap-2 text-sm font-medium transition-colors disabled:opacity-50" disabled>
+                <span id="runIcon">▶</span>
+                <span>Run</span>
+            </button>
+            <button id="clearBtn" class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1.5 rounded text-sm transition-colors">
+                Clear
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
+        
+        <!-- Editor Section -->
+        <section id="editorSection" class="flex-1 flex flex-col border-r border-gray-700 z-10 bg-[#1e1e1e]">
+            <div id="monaco-container" class="flex-1"></div>
+        </section>
+
+        <!-- Terminal Section -->
+        <section id="terminalSection" class="flex-1 md:w-1/3 flex flex-col bg-black overflow-hidden md:relative absolute inset-0 md:inset-auto translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out z-20 md:z-auto">
+            <div class="bg-[#252526] px-4 py-2 text-xs font-mono uppercase tracking-wider text-gray-400 flex justify-between items-center border-b border-gray-800">
+                <span>Output</span>
+                <button id="closeTerminal" class="md:hidden text-lg">&times;</button>
+            </div>
+            <div id="terminal" class="flex-1 p-4 font-mono text-sm overflow-y-auto whitespace-pre-wrap break-all selection:bg-gray-700">
+                <div class="text-blue-400 italic mb-2" id="status-msg">Initializing Python environment...</div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Mobile Tabs -->
+    <footer class="md:hidden h-12 border-t border-gray-700 flex bg-[#252526] shrink-0">
+        <button id="tabCode" class="flex-1 flex items-center justify-center gap-2 text-blue-400 font-medium border-t-2 border-blue-400">
+            <span>Code</span>
+        </button>
+        <button id="tabOutput" class="flex-1 flex items-center justify-center gap-2 text-gray-400">
+            <span>Output</span>
+        </button>
+    </footer>
+
+    <!-- Monaco Loader -->
+    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.43.0/min/vs/loader.js"></script>
+    <script type="module" src="app.js"></script>
+</body>
+</html>
