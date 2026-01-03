@@ -1,74 +1,231 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Python Playground</title>
     
-    <!-- CDN Dependencies -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.mjs" type="module"></script>
-    <link rel="stylesheet" href="style.css">
-    
-    <!-- iOS App Icon -->
-    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐍</text></svg>">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐍</text></svg>">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/python/python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js"></script>
+
+    <style>
+        :root {
+            --bg-dark: #121212;
+            --editor-bg:#000;
+            --btn-run: #27ae60;
+            --btn-clear: #34495e;
+            --tab-active: #3498db;
+            --syn-base: #abb2bf;
+            --syn-comment: #6a9955;
+            --syn-keyword: #c678dd;
+            --syn-string: #ce9178;
+            --syn-func:   #dcdcaa;
+            --syn-number: #d19a66;
+            --syn-operator: #56b6c2;
+        }
+
+        body {
+            margin: 0;
+            background-color: var(--bg-dark);
+            font-family: -apple-system, system-ui, sans-serif;
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            color: white;
+        }
+
+        header {
+            padding: 10px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg-dark);
+            border-bottom: 1px solid #333;
+        }
+
+        .logo-section img { width: 30px; height: 30px; }
+
+        .header-btns { display: flex; gap: 8px; }
+        .btn {
+            border: none; border-radius: 4px; font-weight: bold; font-size: 16px;
+            padding: 8px 24px; color: white; display: flex; align-items: center; gap: 5px;
+        }
+        .btn-run { background: var(--btn-run); }
+        .btn-clear { background: var(--btn-clear); }
+
+        #editor-container { flex: 1; display: block; background: var(--editor-bg); }
+
+        .CodeMirror {
+            height: 100%;
+            background: var(--editor-bg) !important;
+            color: var(--syn-base) !important;
+            font-family: 'SF Mono', 'Menlo', 'Monaco', monospace;
+            font-size: 16px;
+        }
+        .CodeMirror-gutters { background: var(--editor-bg); border: none; }
+        .CodeMirror-linenumber { color: #5c6370; }
+        .CodeMirror-cursor { border-left: 2px solid white !important; }
+
+        .cm-s-default .CodeMirror-line { color: var(--syn-base); }
+        .cm-comment { color: var(--syn-comment) !important; }
+        .cm-keyword { color: var(--syn-keyword) !important; }
+        .cm-string { color: var(--syn-string) !important; }
+        .cm-builtin { color: var(--syn-func) !important; }
+        .cm-def { color: var(--syn-func) !important; }
+        .cm-variable { color: var(--syn-base) !important; }
+        .cm-number { color: var(--syn-number) !important; }
+        .cm-operator { color: var(--syn-operator) !important; }
+
+        #output-container {
+            flex: 1; display: none; background: #000;
+            padding: 15px; font-family: monospace; font-size: 14px; overflow-y: auto;
+        }
+
+        .tab-bar { display: flex; background: #1a1a1a; padding-bottom: env(safe-area-inset-bottom); }
+        .tab {
+            flex: 1; text-align: center; padding: 15px;
+            font-weight: bold; color: #666; text-transform: uppercase; font-size: 14px;
+        }
+        .tab.active { color: var(--tab-active); border-bottom: 3px solid var(--tab-active); }
+
+        #loader {
+            position: fixed; inset: 0; background: var(--bg-dark); z-index: 2000;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        }
+        .spinner { width: 40px; height: 40px; border: 4px solid #333; border-top: 4px solid var(--tab-active); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
 </head>
-<body class="bg-[#1e1e1e] text-gray-200 overflow-hidden h-screen flex flex-col">
+<body>
 
-    <!-- Header -->
-    <header class="h-14 border-b border-gray-700 flex items-center justify-between px-4 bg-[#252526] shrink-0">
-        <div class="flex items-center gap-2">
-            <span class="text-xl">🐍</span>
-            <h1 class="font-bold text-sm md:text-base hidden sm:block">Python Playground</h1>
-        </div>
+<div id="loader">
+    <div class="spinner"></div>
+    <p style="color: #888; margin-top: 15px;">Cargando Python...</p>
+</div>
+
+<header>
+ <div class="logo-section">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/c/c3/Python-logo-notext.svg" alt="Python" style="width: 30px; height: 30px;">
+</div>
+    <div class="header-btns">
+        <button id="run-btn" class="btn btn-run" onclick="runPython()">▶ Run</button>
+        <button class="btn btn-clear" onclick="handleClear()">Clear</button>
+    </div>
+</header>
+
+<div id="editor-container">
+    <textarea id="editor"># Python Playground
+import sys
+
+def greet(name):
+    return f"Hello, {name}!"
+
+print("System Version:", sys.version[:5])
+print(greet("Developer"))
+
+# Matemáticas simples
+numbers = [1, 2, 3, 4, 5]
+squares = [n**2 for n in numbers]
+print(f"Squares of {numbers}: {squares}")</textarea>
+</div>
+
+<div id="output-container"></div>
+
+<div class="tab-bar">
+    <div id="tab-code" class="tab active" onclick="switchTab('code')">Code</div>
+    <div id="tab-output" class="tab" onclick="switchTab('output')">Output</div>
+</div>
+
+<script>
+    let pyodide = null;
+    let editor = null;
+    let currentTab = 'code';
+
+    function initEditor() {
+        editor = CodeMirror.fromTextArea(document.getElementById("editor"), {
+            mode: "python",
+            lineNumbers: true,
+            indentUnit: 4,
+            autoCloseBrackets: true,
+            theme: "default"
+        });
+    }
+
+    async function startPython() {
+        try {
+            pyodide = await loadPyodide();
+            await pyodide.runPythonAsync(`
+                import sys, io
+                from js import printToConsole
+                class Output(io.TextIOBase):
+                    def write(self, t):
+                        if t.strip(): printToConsole(t)
+                        return len(t)
+                sys.stdout = Output()
+                sys.stderr = Output()
+            `);
+            document.getElementById("loader").style.display = "none";
+        } catch (e) { console.error(e); }
+    }
+
+    window.printToConsole = (text) => {
+        const out = document.getElementById("output-container");
+        out.innerHTML += `<div style="margin-bottom:5px; color:#2a782f;">> ${text}</div>`;
+        out.scrollTop = out.scrollHeight;
+    };
+
+    function switchTab(target) {
+        currentTab = target;
+        const codeCont = document.getElementById("editor-container");
+        const outCont = document.getElementById("output-container");
+        const tabCode = document.getElementById("tab-code");
+        const tabOut = document.getElementById("tab-output");
+
+        if (target === 'code') {
+            codeCont.style.display = "block";
+            outCont.style.display = "none";
+            tabCode.classList.add('active');
+            tabOut.classList.remove('active');
+            editor.refresh();
+        } else {
+            codeCont.style.display = "none";
+            outCont.style.display = "block";
+            tabCode.classList.remove('active');
+            tabOut.classList.add('active');
+        }
+    }
+
+    // Nueva función inteligente para el botón Clear
+    function handleClear() {
+        if (currentTab === 'code') {
+            if (confirm("¿Borrar todo el código?")) {
+                editor.setValue("");
+            }
+        } else {
+            // No pide confirmación para limpiar la consola, es un proceso más común
+            document.getElementById("output-container").innerHTML = "";
+        }
+    }
+
+    async function runPython() {
+        const out = document.getElementById("output-container");
+        out.innerHTML = '<div style="color: #666; margin-bottom:10px;">-- Ejecutando --</div>';
+        switchTab('output');
         
-        <div class="flex items-center gap-2">
-            <button id="runBtn" class="bg-green-600 hover:bg-green-500 text-white px-4 py-1.5 rounded flex items-center gap-2 text-sm font-medium transition-colors disabled:opacity-50" disabled>
-                <span id="runIcon">▶</span>
-                <span>Run</span>
-            </button>
-            <button id="clearBtn" class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1.5 rounded text-sm transition-colors">
-                Clear
-            </button>
-        </div>
-    </header>
+        try {
+            await pyodide.runPythonAsync(editor.getValue());
+        } catch (err) {
+            out.innerHTML += `<div style="color: #ff453a;">${err}</div>`;
+        }
+    }
 
-    <!-- Main Content -->
-    <main class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
-        
-        <!-- Editor -->
-        <section id="editorSection" class="flex-1 flex flex-col border-r border-gray-700 bg-[#1e1e1e]">
-            <div id="monaco-container" class="flex-1"></div>
-        </section>
-
-        <!-- Terminal -->
-        <section id="terminalSection" class="flex-1 md:w-1/3 flex flex-col bg-black overflow-hidden md:relative absolute inset-0 md:inset-auto translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out z-20 md:z-auto">
-            <div class="bg-[#252526] px-4 py-2 text-xs font-mono uppercase tracking-wider text-gray-400 flex justify-between items-center border-b border-gray-800">
-                <span>Output</span>
-                <button id="closeTerminal" class="md:hidden text-lg">&times;</button>
-            </div>
-            <div id="terminal" class="flex-1 p-4 font-mono text-sm overflow-y-auto whitespace-pre-wrap break-all">
-                <div class="text-blue-400 italic mb-2" id="status-msg">Initializing Python...</div>
-            </div>
-        </section>
-
-    </main>
-
-    <!-- Mobile Tabs -->
-    <footer class="md:hidden h-12 border-t border-gray-700 flex bg-[#252526] shrink-0">
-        <button id="tabCode" class="flex-1 flex items-center justify-center gap-2 text-blue-400 font-medium border-t-2 border-blue-400">
-            <span>Code</span>
-        </button>
-        <button id="tabOutput" class="flex-1 flex items-center justify-center gap-2 text-gray-400">
-            <span>Output</span>
-        </button>
-    </footer>
-
-    <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.47.0/min/vs/loader.js"></script>
-    <script type="module" src="app.js"></script>
+    initEditor();
+    startPython();
+</script>
 </body>
 </html>
