@@ -52,12 +52,34 @@ body {
     height: 100%;
 }
 
-/* Disable text selection and mobile context menu */
-#terminal {
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
 
-    -webkit-touch-callout: none; /* iOS */
+/* Enable text selection in Monaco editor */
+#monaco-container {
+    user-select: text;
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+}
+
+/* Disable selection ONLY in terminal output */
+#terminal {
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+}
+
+/* But allow selection in the status message */
+#status-msg {
+    user-select: text;
+    -webkit-user-select: text;
+}
+
+/* Disable iOS callout only in terminal, not editor */
+#terminal {
+    -webkit-touch-callout: none;
+}
+
+/* Ensure editor works normally */
+#monaco-container {
+    -webkit-touch-callout: default;
 }

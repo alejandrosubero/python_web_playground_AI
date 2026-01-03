@@ -179,8 +179,14 @@ window.addEventListener('keydown', (e) => {
     }
 });
 
-document.addEventListener("contextmenu", e => {
+// POR ESTO:
+document.getElementById('terminal').addEventListener("contextmenu", e => {
     e.preventDefault();
+});
+
+// Y añade esto para habilitar selección en el editor:
+editor.onDidFocusEditorText(() => {
+    document.getElementById('monaco-container').style.userSelect = 'text';
 });
 
 // Start initialization
