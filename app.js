@@ -179,5 +179,9 @@ window.addEventListener('keydown', (e) => {
     }
 });
 
+document.addEventListener("contextmenu", e => {
+    e.preventDefault();
+});
+
 // Start initialization
 initPyodide();
