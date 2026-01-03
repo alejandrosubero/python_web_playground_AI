@@ -15,17 +15,17 @@ import sys
 def greet(name):
     return f"Hello, {name}!"
 
-print("System Version:", sys.version)
-print(greet("Developer"))
+print("Python Version:", sys.version.split()[0])
+print(greet("iOS Developer"))
 
-# Try some math
+# Math example
 numbers = [1, 2, 3, 4, 5]
 squares = [n**2 for n in numbers]
-print(f"Squares of {numbers}: {squares}")
+print(f"Squares: {squares}")
 `;
 
 // Initialize Monaco Editor
-require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.43.0/min/vs' } });
+require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.47.0/min/vs' } });
 require(['vs/editor/editor.main'], function () {
     const savedCode = localStorage.getItem('python_code') || DEFAULT_CODE;
     
@@ -38,38 +38,51 @@ require(['vs/editor/editor.main'], function () {
         minimap: { enabled: false },
         padding: { top: 16 },
         scrollBeyondLastLine: false,
+        wordWrap: 'on', // Better for mobile
+        renderLineHighlight: 'line',
+        hideCursorInOverviewRuler: true,
+        // iOS specific settings
+        scrollbars: {
+            vertical: 'auto',
+            horizontal: 'auto',
+            useShadows: false,
+            verticalHasArrows: false,
+            horizontalHasArrows: false,
+            verticalScrollbarSize: 8,
+            horizontalScrollbarSize: 8
+        }
     });
 
     // Save code on change
+    let saveTimeout;
     editor.onDidChangeModelContent(() => {
-        localStorage.setItem('python_code', editor.getValue());
+        clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(() => {
+            localStorage.setItem('python_code', editor.getValue());
+        }, 300);
     });
 });
 
 // Initialize Pyodide
 async function initPyodide() {
     try {
-        pyodide = await loadPyodide({
-            indexURL: "https://cdn.jsdelivr.net/pyodide/v0.26.2/full/"
-        });
+        const { loadPyodide } = await import('https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.mjs');
+        pyodide = await loadPyodide();
         
-        // Setup stdout redirection
-        pyodide.setStdout({
-            batched: (text) => appendToTerminal(text, 'stdout')
-        });
-        pyodide.setStderr({
-            batched: (text) => appendToTerminal(text, 'stderr')
-        });
+        // Setup stdout/stderr redirection
+        pyodide.setStdout({ batched: (text) => appendToTerminal(text, 'stdout') });
+        pyodide.setStderr({ batched: (text) => appendToTerminal(text, 'stderr') });
 
-        statusMsg.innerHTML = "✓ Python engine ready.";
+        statusMsg.innerHTML = "✓ Ready!";
         runBtn.disabled = false;
+        
         setTimeout(() => {
             if (statusMsg) statusMsg.remove();
-        }, 2000);
+        }, 1500);
 
         playStartupSound();
     } catch (err) {
-        appendToTerminal(`Error loading Pyodide: ${err.message}`, 'stderr');
+        appendToTerminal(`Error: ${err.message}`, 'stderr');
     }
 }
 
@@ -91,13 +104,12 @@ async function runCode() {
     const originalIcon = document.getElementById('runIcon').textContent;
     document.getElementById('runIcon').textContent = '⌛';
     
-    // On mobile, automatically switch to output tab
+    // Mobile: switch to output
     if (window.innerWidth < 768) {
         switchTab('output');
     }
 
     try {
-        // Clear previous result styling if any
         const lastResult = terminal.querySelector('.result');
         if (lastResult) lastResult.style.opacity = '0.5';
 
@@ -133,16 +145,18 @@ function switchTab(tab) {
     }
 }
 
-// Audio logic using WebAudio API
+// Audio Feedback
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
 function playTone(freq, duration, type = 'sine', volume = 0.1) {
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
     
     osc.type = type;
     osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-    
     gain.gain.setValueAtTime(volume, audioCtx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
     
@@ -158,20 +172,17 @@ const playSuccessSound = () => {
     playTone(523.25, 0.1, 'sine', 0.05);
     setTimeout(() => playTone(659.25, 0.15, 'sine', 0.05), 100);
 };
-const playErrorSound = () => {
-    playTone(220, 0.2, 'sawtooth', 0.05);
-};
+const playErrorSound = () => playTone(220, 0.2, 'sawtooth', 0.05);
 
 // Event Listeners
 runBtn.addEventListener('click', runCode);
-clearBtn.addEventListener('click', () => {
-    terminal.innerHTML = '';
-});
+clearBtn.addEventListener('click', () => terminal.innerHTML = '');
+
 tabCode.addEventListener('click', () => switchTab('code'));
 tabOutput.addEventListener('click', () => switchTab('output'));
 closeTerminal.addEventListener('click', () => switchTab('code'));
 
-// Keyboard Shortcut: Cmd/Ctrl + Enter to run
+// Keyboard shortcut: Cmd/Ctrl + Enter
 window.addEventListener('keydown', (e) => {
     if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
         e.preventDefault();
@@ -179,15 +190,10 @@ window.addEventListener('keydown', (e) => {
     }
 });
 
-// POR ESTO:
-document.getElementById('terminal').addEventListener("contextmenu", e => {
+// CRITICAL FIX: Only prevent context menu in terminal, not editor
+document.getElementById('terminal').addEventListener('contextmenu', e => {
     e.preventDefault();
 });
 
-// Y añade esto para habilitar selección en el editor:
-editor.onDidFocusEditorText(() => {
-    document.getElementById('monaco-container').style.userSelect = 'text';
-});
-
-// Start initialization
+// Start
 initPyodide();
