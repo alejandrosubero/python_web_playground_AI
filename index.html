@@ -6,7 +6,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Python Playground</title>
-    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/python/python.min.js"></script>
@@ -17,7 +17,7 @@
             --bg-dark: #121212;
             --editor-bg:#000;
             --btn-run: #27ae60;
-            --btn-clear: #34495e;
+            --btn-clear: #c20303;
             --tab-active: #3498db;
             --syn-base: #abb2bf;
             --syn-comment: #6a9955;
@@ -26,6 +26,9 @@
             --syn-func:   #dcdcaa;
             --syn-number: #d19a66;
             --syn-operator: #56b6c2;
+            --btn-reset: #c0392b; /* Rojo para el reset */
+             --btn-copy: #2250e6;
+            --btn-paste: #fcd201; 
         }
 
         body {
@@ -51,12 +54,41 @@
         .logo-section img { width: 30px; height: 30px; }
 
         .header-btns { display: flex; gap: 8px; }
+
         .btn {
-            border: none; border-radius: 4px; font-weight: bold; font-size: 16px;
-            padding: 8px 24px; color: white; display: flex; align-items: center; gap: 5px;
+            border: none; 
+            border-radius: 4px; 
+            font-weight: bold; 
+            font-size: 14px; /* Bajé un poco el tamaño para que quepan todos en móviles */
+            padding: 8px 12px; /* Ajuste de padding */
+            color: white; 
+            display: flex; 
+            align-items: center; 
+            gap: 8px; /* Espacio entre el icono y el texto */
+            cursor: pointer;
+            white-space: nowrap; /* Evita que el texto se rompa en dos líneas */
         }
+
+
         .btn-run { background: var(--btn-run); }
         .btn-clear { background: var(--btn-clear); }
+        .btn-reset { background: var(--btn-reset); }
+        .btn-copy { background: var(--btn-copy); }
+        .paste-btn {background: var(--btn-paste);}
+
+
+        /* Ajuste para botones que solo tienen icono */
+        .btn-copy, .paste-btn .btn-clear {
+            padding: 8px 12px !important; /* Ajusta el ancho para que sea más simétrico */
+            justify-content: center;       /* Centra el icono */
+            min-width: 45px;               /* Asegura un tamaño mínimo táctil */
+        }
+
+        /* Opcional: Si quieres que el icono sea un poco más grande ahora que no hay texto */
+        .btn i {
+            font-size: 20px;
+        }
+
 
         #editor-container { flex: 1; display: block; background: var(--editor-bg); }
 
@@ -90,48 +122,85 @@
         .tab {
             flex: 1; text-align: center; padding: 15px;
             font-weight: bold; color: #666; text-transform: uppercase; font-size: 14px;
+            cursor: pointer;
         }
         .tab.active { color: var(--tab-active); border-bottom: 3px solid var(--tab-active); }
 
+        /* Loader principal (pantalla completa) */
         #loader {
             position: fixed; inset: 0; background: var(--bg-dark); z-index: 2000;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
         }
+        /* Estilos base del spinner */
         .spinner { width: 40px; height: 40px; border: 4px solid #333; border-top: 4px solid var(--tab-active); border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Efecto visual cuando se copia */
+        .copy-success {
+            background: #ffffff !important;
+            color: #000 !important;
+        }
+
+        /* Clase para ocultar botones */
+        .hidden {
+            display: none !important;
+        }
+
     </style>
 </head>
 <body>
 
 <div id="loader">
     <div class="spinner"></div>
-    <p style="color: #888; margin-top: 15px;">Cargando Python...</p>
+    <p style="color: #888; margin-top: 15px;">Iniciando Motor Python...</p>
 </div>
 
 <header>
- <div class="logo-section">
-    <img src="https://upload.wikimedia.org/wikipedia/commons/c/c3/Python-logo-notext.svg" alt="Python" style="width: 30px; height: 30px;">
-</div>
-    <div class="header-btns">
-        <button id="run-btn" class="btn btn-run" onclick="runPython()">▶ Run</button>
-        <button class="btn btn-clear" onclick="handleClear()">Clear</button>
-    </div>
+        <div class="logo-section">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/c/c3/Python-logo-notext.svg" alt="Python" style="width: 30px; height: 30px;">
+        </div>
+
+        <div class="header-btns">
+            <button class="btn btn-reset" onclick="resetSystem()">
+                <i class="fas fa-undo"></i> Reset
+            </button>
+
+            <button id="run-btn" class="btn btn-run" onclick="runPython()">
+                <i class="fas fa-play"></i> Run
+            </button>
+
+             <button id="paste-btn" class="btn paste-btn" onclick="pasteToEditor()" title="Pegar">
+                <i class="fas fa-paste"></i>
+            </button>
+
+             <button id="copy-btn" class="btn btn-copy" onclick="copyContent()" title="Copiar">
+                <i class="fas fa-copy"></i>
+            </button>
+
+            <button id="btn-clear"  class="btn btn-clear" onclick="handleClear()" title="Clear">
+                <i class="fas fa-trash-alt"></i>
+            </button>
+        </div>
 </header>
 
 <div id="editor-container">
-    <textarea id="editor"># Python Playground
-import sys
+    <textarea id="editor">import pandas as pd
 
-def greet(name):
-    return f"Hello, {name}!"
+# Crear Series
+s = pd.Series([10, 20, 30, 40], index=['a', 'b', 'c', 'd'])
+print("--- SERIES ---")
+print(s)
 
-print("System Version:", sys.version[:5])
-print(greet("Developer"))
-
-# Matemáticas simples
-numbers = [1, 2, 3, 4, 5]
-squares = [n**2 for n in numbers]
-print(f"Squares of {numbers}: {squares}")</textarea>
+# Crear DataFrame
+data = {
+    'nombre': ['Ana', 'Luis', 'María', 'Carlos'],
+    'edad': [25, 30, 22, 35],
+    'ciudad': ['Madrid', 'Barcelona', 'Sevilla', 'Valencia']
+}
+df = pd.DataFrame(data)
+print("\n--- DATAFRAME ---")
+print(df)
+</textarea>
 </div>
 
 <div id="output-container"></div>
@@ -156,76 +225,225 @@ print(f"Squares of {numbers}: {squares}")</textarea>
         });
     }
 
-    async function startPython() {
-        try {
-            pyodide = await loadPyodide();
-            await pyodide.runPythonAsync(`
-                import sys, io
-                from js import printToConsole
-                class Output(io.TextIOBase):
-                    def write(self, t):
-                        if t.strip(): printToConsole(t)
-                        return len(t)
-                sys.stdout = Output()
-                sys.stderr = Output()
-            `);
-            document.getElementById("loader").style.display = "none";
-        } catch (e) { console.error(e); }
+
+
+async function startPython() {
+    const loader = document.getElementById("loader");
+    const loaderText = document.getElementById("loader-text");
+    
+    try {
+        loader.style.display = "flex";
+        pyodide = await loadPyodide();
+      
+        await pyodide.runPythonAsync(`
+            import sys, io
+            import builtins
+            from js import printToConsole, prompt # Importamos prompt de JS
+
+            # Redirigir Print
+            class Output(io.TextIOBase):
+                def write(self, t):
+                    if t.strip(): printToConsole(t)
+                    return len(t)
+            sys.stdout = Output()
+            sys.stderr = Output()
+
+            # Redirigir Input para que use el prompt del navegador
+            def custom_input(prompt_text=""):
+                if prompt_text:
+                    printToConsole(prompt_text) # Muestra la pregunta en tu consola
+                return prompt(prompt_text)
+            
+            builtins.input = custom_input
+        `);
+
+        console.log("Python listo");
+        loader.style.display = "none";
+    } catch (e) {
+        console.error("Fallo al iniciar Pyodide:", e);
+        loaderText.innerHTML = "Error al iniciar motor.<br>Intenta recargar manualmente.";
+        loaderText.style.color = "#ff453a";
     }
+}
+
 
     window.printToConsole = (text) => {
         const out = document.getElementById("output-container");
-        out.innerHTML += `<div style="margin-bottom:5px; color:#2a782f;">> ${text}</div>`;
+        const formattedText = text.replace(/\n/g, '<br>').replace(/ /g, '&nbsp;');
+        out.innerHTML += `<div style="margin-bottom:5px; color:#2a782f; font-family: monospace;">${formattedText}</div>`;
         out.scrollTop = out.scrollHeight;
     };
 
     function switchTab(target) {
-        currentTab = target;
-        const codeCont = document.getElementById("editor-container");
-        const outCont = document.getElementById("output-container");
-        const tabCode = document.getElementById("tab-code");
-        const tabOut = document.getElementById("tab-output");
-
+    currentTab = target;
+    
+    // Elementos de la interfaz
+    const tabs = {
+        'code': {
+            cont: document.getElementById("editor-container"),
+            tab: document.getElementById("tab-code")
+        },
+        'output': {
+            cont: document.getElementById("output-container"),
+            tab: document.getElementById("tab-output")
+        }
+    };
+    // Cambiar visibilidad de contenedores
+    if (target === 'code') {
+        tabs.code.cont.style.display = "block";
+        tabs.output.cont.style.display = "none";
+        tabs.code.tab.classList.add('active');
+        tabs.output.tab.classList.remove('active');
+        if (editor) editor.refresh();
+    } else {
+        tabs.code.cont.style.display = "none";
+        tabs.output.cont.style.display = "block";
+        tabs.code.tab.classList.remove('active');
+        tabs.output.tab.classList.add('active');
+    }
+    // CONTROL DEL BOTÓN PASTE
+    const pasteBtn = document.getElementById("paste-btn");
+    if (pasteBtn) {
         if (target === 'code') {
-            codeCont.style.display = "block";
-            outCont.style.display = "none";
-            tabCode.classList.add('active');
-            tabOut.classList.remove('active');
-            editor.refresh();
+            pasteBtn.style.display = "flex"; // O "inline-block" según tu CSS
         } else {
-            codeCont.style.display = "none";
-            outCont.style.display = "block";
-            tabCode.classList.remove('active');
-            tabOut.classList.add('active');
+            pasteBtn.style.display = "none";
         }
     }
+}
+   
 
-    // Nueva función inteligente para el botón Clear
     function handleClear() {
         if (currentTab === 'code') {
             if (confirm("¿Borrar todo el código?")) {
                 editor.setValue("");
             }
         } else {
-            // No pide confirmación para limpiar la consola, es un proceso más común
             document.getElementById("output-container").innerHTML = "";
         }
     }
 
+function copyContent() {
+    let textToCopy = "";
+    const btn = document.getElementById("copy-btn");
+    const icon = btn.querySelector('i'); // Buscamos el icono dentro del botón
+
+    if (currentTab === 'code') {
+        textToCopy = editor.getValue();
+    } else {
+        textToCopy = document.getElementById("output-container").innerText;
+    }
+
+    if (textToCopy) {
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            // Feedback visual: cambia el icono brevemente
+            icon.classList.replace("fa-copy", "fa-check"); // Cambia a un check
+            btn.classList.add("copy-success");
+
+            setTimeout(() => {
+                icon.classList.replace("fa-check", "fa-copy"); // Vuelve al original
+                btn.classList.remove("copy-success");
+            }, 1500);
+        }).catch(err => {
+            console.error('Error al copiar: ', err);
+        });
+    }
+}
+   
+async function pasteToEditor() {
+    try {
+        const text = await navigator.clipboard.readText();
+        if (text) {
+            // Ir al final del documento
+            const lastLine = editor.lineCount();
+            const breackLine = "\n\n"
+            const textToInsert = (editor.getValue().length > 0 ? breackLine : "") + text;
+            
+            editor.replaceRange(textToInsert, { line: lastLine, ch: 0 });
+            
+            // Forzar scroll al final
+            editor.scrollTo(null, editor.getScrollInfo().height);
+            
+            // NO dar foco al editor inmediatamente (esto a veces invoca el menú)
+            // Esperamos un milisegundo
+            setTimeout(() => {
+                editor.focus();
+                editor.setCursor(editor.lineCount(), 0);
+            }, 50);
+            
+            showToast("Pegado al final");
+
+        }
+    } catch (err) {
+      console.error("Error al pegar:", err);
+        alert("Debes dar permiso al navegador para acceder al portapapeles.");
+    }
+        
+}
+
+
+// Asegúrate de tener esta función de apoyo
+function showToast(message) {
+    let toast = document.getElementById("toast-notif");
+    if (!toast) {
+        toast = document.createElement("div");
+        toast.id = "toast-notif";
+        toast.style = "position:fixed; top:20px; left:50%; transform:translateX(-50%); background:#000; color:#fff; border:1px solid #333; padding:10px 20px; border-radius:8px; font-size:14px; z-index:9999; opacity:0; transition: opacity 0.3s; pointer-events:none; font-family:sans-serif;";
+        document.body.appendChild(toast);
+    }
+    toast.innerText = message;
+    toast.style.opacity = "1";
+    setTimeout(() => { toast.style.opacity = "0"; }, 2000);
+}
+
+    // --- FUNCIÓN DE RESET TOTAL ---
+    async function resetSystem() {
+        if (confirm("¿Reiniciar sistema? Se borrarán todas las variables, librerías instaladas y archivos en memoria.")) {
+        // Forzamos la limpieza de la consola antes de salir
+        document.getElementById("output-container").innerHTML = "";
+        // Usamos true para forzar la recarga desde el servidor y no desde caché
+        window.location.href = window.location.pathname + "?" + Date.now();
+        }
+    }
+
+    // --- FUNCIÓN ACTUALIZADA CON LOADING ---
     async function runPython() {
         const out = document.getElementById("output-container");
-        out.innerHTML = '<div style="color: #666; margin-bottom:10px;">-- Ejecutando --</div>';
-        switchTab('output');
         
+        // 1. Mostramos el spinner y el mensaje de carga
+        // Reutilizamos la clase .spinner pero con tamaño más pequeño (20px)
+        out.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 15px; padding: 15px; border-bottom: 1px solid #333; margin-bottom: 10px;">
+                <div class="spinner" style="width: 20px; height: 20px; border-width: 2px;"></div>
+                <div style="color: #bbb; font-style: italic;">Analizando código y cargando librerías...</div>
+            </div>
+        `;
+        
+        switchTab('output');
+    
+        const code = editor.getValue();
+
         try {
-            await pyodide.runPythonAsync(editor.getValue());
+            // 2. Cargamos las librerías detectadas
+            await pyodide.loadPackagesFromImports(code);
+
+            // 3. Quitamos el mensaje de carga y ponemos el de ejecución
+            out.innerHTML = '<div style="color: #666; margin-bottom:10px; border-bottom: 1px solid #333; padding-bottom: 5px;">-- Ejecución Iniciada --</div>';
+
+            // 4. Ejecutamos el código
+            await pyodide.runPythonAsync(code);
         } catch (err) {
-            out.innerHTML += `<div style="color: #ff453a;">${err}</div>`;
+            // Si hay error (en carga o ejecución), lo mostramos en rojo
+            // Usamos innerHTML += para no borrar lo que ya se haya impreso si falló a mitad
+            out.innerHTML += `<div style="color: #ff453a; margin-top:10px; padding:10px; border: 1px solid #500; background: #2a0000;">${err}</div>`;
         }
     }
 
     initEditor();
+    window.onload = function() {
+    console.log("Página cargada, iniciando motor...");
     startPython();
+};
 </script>
 </body>
 </html>
