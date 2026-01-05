@@ -146,6 +146,89 @@
             display: none !important;
         }
 
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            border-bottom: 1px solid #333;
+        }
+
+        .nav-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-left img {
+            width: 28px;
+            height: 28px;
+        }
+
+        .app-title {
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .menu-btn {
+            background: transparent;
+            font-size: 20px;
+        }
+
+        /* MENÚ FLOTANTE */
+        .floating-menu {
+            position: fixed;
+            top: 60px;
+            right: 15px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 10px;
+            z-index: 3000;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .floating-menu button {
+            /* background: #222; */
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        /* FOOTER */
+        .app-footer {
+            text-align: center;
+            padding: 8px;
+            font-size: 18px;
+            color: #fffcfc;
+            border-top: 1px solid #333;
+            background: #121212;
+        }
+
+        .floating-menu .btn {
+            width: 100%;
+            justify-content: flex-start;
+            font-weight: 500;
+        }
+
+        .floating-menu .btn:active {
+            transform: scale(0.97);
+            opacity: 0.85;
+        }
+
     </style>
 </head>
 <body>
@@ -155,41 +238,42 @@
     <p style="color: #888; margin-top: 15px;">Iniciando Motor Python...</p>
 </div>
 
-<header>
-    <div style="display: flex; flex-direction: row; align-items: center;">
-        <div class="logo-section">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/c/c3/Python-logo-notext.svg" alt="Python"
-                style="width: 30px; height: 30px;">
-        </div>
-        <samp style="margin-left: 8px;"> <p>Python Playground (1.0.0)</p> </samp>
-       
+<header class="navbar">
+    <div class="nav-left">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/c/c3/Python-logo-notext.svg" alt="Python">
+        <span class="app-title">Python Playground</span>
     </div>
-       
 
-       
+    <div class="nav-right">
+        <button id="run-btn" class="btn btn-run" onclick="runPython()">
+            <i class="fas fa-play"></i>
+            <span class="btn-text">Run</span>
+        </button>
 
-        <div class="header-btns">
-            <button class="btn btn-reset" onclick="resetSystem()">
-                <i class="fas fa-undo"></i> Reset
-            </button>
-
-            <button id="run-btn" class="btn btn-run" onclick="runPython()">
-                <i class="fas fa-play"></i> Run
-            </button>
-
-             <button id="paste-btn" class="btn paste-btn" onclick="pasteToEditor()" title="Pegar">
-                <i class="fas fa-paste"></i>
-            </button>
-
-             <button id="copy-btn" class="btn btn-copy" onclick="copyContent()" title="Copiar">
-                <i class="fas fa-copy"></i>
-            </button>
-
-            <button id="btn-clear"  class="btn btn-clear" onclick="handleClear()" title="Clear">
-                <i class="fas fa-trash-alt"></i>
-            </button>
-        </div>
+        <button class="btn menu-btn" onclick="toggleMenu()">
+            <i class="fas fa-bars"></i>
+        </button>
+    </div>
 </header>
+
+<div id="floating-menu" class="floating-menu hidden">
+    <button class="btn btn-reset" onclick="resetSystem()">
+        <i class="fas fa-undo"></i> Reset
+    </button>
+
+    <button class="btn btn-copy" onclick="copyContent()">
+        <i class="fas fa-copy"></i> Copy
+    </button>
+
+    <button class="btn paste-btn" onclick="pasteToEditor()">
+        <i class="fas fa-paste"></i> Paste
+    </button>
+
+    <button class="btn btn-clear" onclick="handleClear()">
+        <i class="fas fa-trash-alt"></i> Clear
+    </button>
+</div>
+
 
 <div id="editor-container">
     <textarea id="editor">import pandas as pd
@@ -217,6 +301,12 @@ print(df)
     <div id="tab-code" class="tab active" onclick="switchTab('code')">Code</div>
     <div id="tab-output" class="tab" onclick="switchTab('output')">Output</div>
 </div>
+
+
+<footer class="app-footer">
+    Python Playground. v1.0.0
+</footer>
+
 
 <script>
     let pyodide = null;
@@ -448,10 +538,16 @@ function showToast(message) {
     }
 
     initEditor();
+    
     window.onload = function() {
-    console.log("Página cargada, iniciando motor...");
-    startPython();
-};
+        console.log("Página cargada, iniciando motor...");
+        startPython();
+    };
+
+    function toggleMenu() {
+        const menu = document.getElementById("floating-menu");
+        menu.classList.toggle("hidden");
+    }
 </script>
 </body>
 </html>
